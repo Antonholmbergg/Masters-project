@@ -9,11 +9,12 @@ for device in physical_devices:
 
 import pandas as pd
 from tensorflow import keras
-from tensorflow.keras import layers
+#from tensorflow.keras import layers
 import numpy as np
 np.set_printoptions(precision=3, suppress=True)
 from sklearn.preprocessing import MinMaxScaler
-from raytrace_model_def import Fc_model
+from raytrace_model_def import model_builder
+import keras_tuner as kt
 
 df = pd.read_csv('/mnt/md0/aholmberg/data/raytrace_samples_angle.csv')
 
@@ -57,20 +58,88 @@ norm_y_test = scaler_y.transform(y_test)
 
 
 
-activation = keras.layers.ReLU()
-layers = [128, 256, 512, 1024]
-model = Fc_model(layers, activation)
+#activation = 'tanh'#keras.layers.Tanh()
+#layers = [128, 512, 512, 256, 128]
 
-model.build((1,3))
-print(model.summary())
+#model = Fc_model(layers, activation)
+#model.build((1,3))
 
-model.compile(optimizer='adam', loss='mse')
+#model = get_simple_model(layers, activation)
+#opt = keras.optimizers.Adam(learning_rate=1e-3)
+#model.compile(optimizer=opt, loss='mse')
+#print(model.summary())
 
+
+path_of_tuner = '/mnt/md0/aholmberg/models/raytrace_tuner'
+
+if not os.path.isdir(path_of_tuner):
+    os.mkdir(path_of_tuner)
+
+
+tuner = kt.Hyperband(
+    model_builder,
+    objective='val_loss',
+    max_epochs=50,
+    directory=path_of_tuner,
+    project_name='kt_test'
+    )
+
+
+early_stoping = keras.callbacks.EarlyStopping(
+    monitor="val_loss",
+    patience=5
+)
+
+
+tuner.search(
+    norm_x_train,
+    norm_y_train,
+    epochs=50,
+    validation_split=0.15,
+    callbacks=[early_stoping],
+    use_multiprocessing=True,
+    workers=4
+)
 
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
-    filepath='/mnt/md0/aholmberg/models/ckpt_epoch{epoch}_val_{val_loss}.hdf5',
+    filepath='/mnt/md0/aholmberg/models/ckpt',
     save_best_only=True,
+    save_weights_only=False
 )
-model.fit(norm_x_train, norm_y_train, epochs=10, validation_split=0.15, callbacks=model_checkpoint_callback)
-#model.save
-y_test = model(norm_x_test).numpy()
+
+
+lr_plateau = keras.callbacks.ReduceLROnPlateau(
+    monitor="val_loss",
+    factor=0.1,
+    patience=5
+)
+
+
+best_hps = tuner.get_best_hyperparameters()[0]
+
+
+#model = tuner.hypermodel.build(best_hps)
+model = model_builder(best_hps)
+
+
+history = model.fit(norm_x_train, norm_y_train, epochs=50, validation_split=0.15)
+
+val_loss_per_epoch = history.history['val_loss']
+best_epoch = val_loss_per_epoch.index(max(val_loss_per_epoch)) + 1
+print('Best epoch: %d' % (best_epoch,))
+
+model.fit(norm_x_train, norm_y_train, epochs=best_epoch, validation_split=0.15)
+
+path = '/mnt/md0/aholmberg/models/best_raytrace_model'
+
+if not os.path.isdir(path):
+    os.mkdir(path)
+
+model.save(path)
+
+
+#callback = [model_checkpoint_callback, early_stoping]#, lr_plateau]
+
+#model.fit(norm_x_train, norm_y_train, epochs=50, validation_split=0.15, callbacks=callback)
+
+#y_test = model(norm_x_test).numpy()
