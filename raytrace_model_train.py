@@ -94,11 +94,10 @@ early_stoping = keras.callbacks.EarlyStopping(
 tuner.search(
     norm_x_train,
     norm_y_train,
+    batch_size=128,
     epochs=50,
     validation_split=0.15,
-    callbacks=[early_stoping],
-    use_multiprocessing=True,
-    workers=4
+    callbacks=[early_stoping]
 )
 
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
@@ -122,13 +121,13 @@ best_hps = tuner.get_best_hyperparameters()[0]
 model = model_builder(best_hps)
 
 
-history = model.fit(norm_x_train, norm_y_train, epochs=50, validation_split=0.15)
+history = model.fit(norm_x_train, norm_y_train, epochs=50, validation_split=0.15, batch_size=128)
 
 val_loss_per_epoch = history.history['val_loss']
 best_epoch = val_loss_per_epoch.index(max(val_loss_per_epoch)) + 1
 print('Best epoch: %d' % (best_epoch,))
 
-model.fit(norm_x_train, norm_y_train, epochs=best_epoch, validation_split=0.15)
+model.fit(norm_x_train, norm_y_train, epochs=best_epoch, validation_split=0.15, batch_size=128)
 
 path = '/mnt/md0/aholmberg/models/best_raytrace_model'
 
