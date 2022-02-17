@@ -21,18 +21,18 @@ def get_simple_model(width, depth, activation, input_shape=3, output_shape=8, op
 
 def model_builder(hp):
 
-    width = hp.Int(name='width', min_value=128, max_value=512, step=128)
+    width = hp.Int(name='width', min_value=256, max_value=512, step=128)
     depth = hp.Int(name='depth', min_value=3, max_value=6, step=1)
     activation = hp.Choice(name='activation', values=['tanh', 'relu', 'sigmoid', 'selu'])
-    batch_norm = hp.Boolean(name='batch_norm')
+    #batch_norm = hp.Boolean(name='batch_norm')
     learning_rate = hp.Choice(name='learning_rate', values=[5e-3, 1e-3, 5e-4])
     
     
     model = get_simple_model(
         width=width,
         depth=depth,
-        activation=activation,
-        batch_norm=batch_norm
+        activation=activation#,
+        #batch_norm=batch_norm
         )
     
     opt = keras.optimizers.Adam(learning_rate=learning_rate)

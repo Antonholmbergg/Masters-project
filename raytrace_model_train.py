@@ -75,7 +75,7 @@ path_of_tuner = '/mnt/md0/aholmberg/models/raytrace_tuner'
 if not os.path.isdir(path_of_tuner):
     os.mkdir(path_of_tuner)
 
-
+"""
 tuner = kt.Hyperband(
     model_builder,
     objective='val_loss',
@@ -83,7 +83,15 @@ tuner = kt.Hyperband(
     directory=path_of_tuner,
     project_name='kt_test'
     )
+"""
 
+tuner = kt.BayesianOptimization(
+    model_builder,
+    objective='val_loss',
+    max_trials=100,
+    directory=path_of_tuner,
+    project_name='kt_bayesian'
+    )
 
 early_stoping = keras.callbacks.EarlyStopping(
     monitor="val_loss",
@@ -129,7 +137,7 @@ print('Best epoch: %d' % (best_epoch,))
 
 model.fit(norm_x_train, norm_y_train, epochs=best_epoch, validation_split=0.15, batch_size=128)
 
-path = '/mnt/md0/aholmberg/models/best_raytrace_model'
+path = '/mnt/md0/aholmberg/models/best_raytrace_model_bayesian'
 
 if not os.path.isdir(path):
     os.mkdir(path)
