@@ -1,5 +1,6 @@
 from gpuutils import GpuUtils
 GpuUtils.allocate(gpu_count=1, framework='keras')
+import os
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import pandas as pd
@@ -12,7 +13,7 @@ for device in physical_devices:
 from tensorflow import keras
 from radiotools import plthelpers as php
 
-df = pd.read_csv('/mnt/md0/aholmberg/data/raytrace_samples_angle.csv')
+df = pd.read_csv('/mnt/md0/aholmberg/data/raytrace_samples_random.csv')
 
 sc_pos_r = df['source_pos_r'].to_numpy().astype(np.float32)
 sc_pos_z = df['source_pos_z'].to_numpy().astype(np.float32)
@@ -25,33 +26,45 @@ launch = df['launch_angle'].to_numpy().astype(np.float32)
 recieve = df['recieve_angle'].to_numpy().astype(np.float32)
 y = np.stack((travel_time, path_length, launch, recieve), axis=1)
 
-x  = x[0::2,:]
-x_train = x[:int(x.shape[0]*0.8)]
-x_test = x[int(x.shape[0]*0.8):]
+unique, index, count = np.unique(x, return_counts=True, return_index=True, axis=0)
+print(unique, index, count)
+print(np.unique(count, return_counts=True))
+x[index[count == 1], :]
+x_new = np.delete(x, index[count == 1], axis=0)
+y_new = np.delete(y, index[count == 1], axis=0)
+unique, index, count = np.unique(x_new, return_counts=True, return_index=True, axis=0)
+print(unique, index, count)
+print(np.unique(count, return_counts=True))
 
-y_temp1  = y[0::2,:]
-y_temp2  = y[1::2,:]
+x  = x_new[0::2,:]
+#x_train = x[:int(x.shape[0]*0.8)]
+#x_test = x[int(x.shape[0]*0.8):]
+x_train = x
+
+y_temp1  = y_new[0::2,:]
+y_temp2  = y_new[1::2,:]
 y = np.zeros((y_temp1.shape[0], 8))
 
 for i in range(4):
     y[:,2*i] = y_temp1[:,i]
     y[:,2*i+1] = y_temp2[:,i]
 
-y_train = y[:int(y.shape[0]*0.8)]
-y_test = y[int(y.shape[0]*0.8):]
+#y_train = y[:int(y.shape[0]*0.8)]
+#y_test = y[int(y.shape[0]*0.8):]
+y_train = y
 
 scaler_x = MinMaxScaler(feature_range=(0,1))
 scaler_x.fit(x_train)
 norm_x_train = scaler_x.transform(x_train)
-norm_x_test = scaler_x.transform(x_test)
+#norm_x_test = scaler_x.transform(x_test)
 
 scaler_y = MinMaxScaler(feature_range=(0,1))
 scaler_y.fit(y_train)
 norm_y_train = scaler_y.transform(y_train)
-norm_y_test = scaler_y.transform(y_test)
+#norm_y_test = scaler_y.transform(y_test)
 
 
-model = keras.models.load_model('/mnt/md0/aholmberg/models/best_raytrace_model_bayesian')
+model = keras.models.load_model('/mnt/md0/aholmberg/models/best_raytrace_model_hyper_21')
 print(model.summary())
 
 for i, layer in enumerate (model.layers):
@@ -62,13 +75,14 @@ for i, layer in enumerate (model.layers):
         print('   no activation attribute')
 
 
-y_test_pred = model(norm_x_test).numpy()
+y_test_pred = model(norm_x_train).numpy()
 y_test_inv = scaler_y.inverse_transform(y_test_pred)
 
 
-diff = y_test - y_test_inv
-diff_deg = np.copy(diff)
-diff_deg[:,4:] = np.degrees(diff_deg[:, 4:])
+diff_deg = y_train - y_test_inv
+#diff = y_train - y_test_inv
+#diff_deg = np.copy(diff)
+#diff_deg[:,4:] = np.degrees(diff_deg[:, 4:])
 
 
 sol = ['time_sol_1:', 
@@ -80,6 +94,11 @@ sol = ['time_sol_1:',
        'recieve_sol_1:',
        'recieve_sol_2:']
 
+path_of_plot = '/mnt/md0/aholmberg/plots/raytrace/kt-hyper-21/'
+
+if not os.path.isdir(path_of_plot):
+    os.mkdir(path_of_plot)
+
 for i in range(8):
     #mean = np.mean(diff[:,i])
     #std = np.std(diff[:,i])
@@ -87,4 +106,4 @@ for i in range(8):
     std = np.std(diff_deg[:,i])
     print(sol[i] + f' mean: {mean:.4f}  std: {std:.4f}')
     fix, ax = php.get_histogram(diff_deg[:,i], bins=50)
-    plt.savefig('/mnt/md0/aholmberg/plots/raytrace/kt-bayesian/' + sol[i][:-1] + '.png')
+    plt.savefig(path_of_plot + sol[i][:-1] + '.png')

@@ -1,7 +1,4 @@
-from email.policy import default
 from tensorflow import keras
-import keras_tuner as kt
-
 
 def get_simple_model(width, depth, activation, input_shape=3, output_shape=8, optimizer='adam', loss='mse', batch_norm=False):
 
@@ -21,11 +18,12 @@ def get_simple_model(width, depth, activation, input_shape=3, output_shape=8, op
 
 def model_builder(hp):
 
-    width = hp.Int(name='width', min_value=256, max_value=512, step=128)
-    depth = hp.Int(name='depth', min_value=3, max_value=6, step=1)
-    activation = hp.Choice(name='activation', values=['tanh', 'relu', 'sigmoid', 'selu'])
+    width = hp.Int(name='width', min_value=512, max_value=3072, step=256)
+    depth = hp.Int(name='depth', min_value=1, max_value=6, step=1)
+    #activation = hp.Choice(name='activation',  values=[keras.layers.LeakyReLU(), keras.activations.relu()])#values=['tanh', 'relu', 'selu'])
+    activation = 'relu'
     #batch_norm = hp.Boolean(name='batch_norm')
-    learning_rate = hp.Choice(name='learning_rate', values=[5e-3, 1e-3, 5e-4])
+    learning_rate = hp.Choice(name='learning_rate', values=[1e-3, 5e-4])
     
     
     model = get_simple_model(
