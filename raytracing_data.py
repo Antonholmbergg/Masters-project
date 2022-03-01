@@ -7,7 +7,7 @@ from NuRadioMC.utilities.medium import southpole_2015
 
 
 sampler = qmc.Sobol(d=3, seed=42)
-samples = sampler.random_base2(m=21)
+samples = sampler.random_base2(m=24)
 
 
 l_bounds = [-2000, -2700, -200]
@@ -63,9 +63,9 @@ df['launch_angle'] = np.degrees(np.arctan2(df['launch_vec_r'].to_numpy(), df['la
 df['recieve_angle'] = np.degrees(np.arctan2(df['recieve_vec_r'].to_numpy(), df['recieve_vec_z'].to_numpy()))
 #df.to_csv('/mnt/md0/aholmberg/data/raytrace_samples_angle.csv', index=False)
 
-df.to_csv('/mnt/md0/aholmberg/data/raytrace_samples_sobol_21.csv', index=False)
+df.to_csv('/mnt/md0/aholmberg/data/raytrace_samples_sobol_24.csv', index=False)
 df2 = pd.DataFrame(classification_data)
-df2.to_csv('/mnt/md0/aholmberg/data/ana_ray_class_sobol_21.csv', index=False)
+df2.to_csv('/mnt/md0/aholmberg/data/ana_ray_class_sobol_24.csv', index=False)
 """
 type: int
     * 1: 'direct'

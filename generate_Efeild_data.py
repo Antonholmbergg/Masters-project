@@ -33,7 +33,7 @@ traces[:, :2] = samples_scaled
 
 for i in range(2**m):
     trace = ask.get_time_trace(
-    energy=samples_scaled[i,0]*units.EeV,
+    energy=samples_scaled[i,0]*units.eV,
     theta=samples_scaled[i,1]*units.deg,
     N=N,
     dt=dt,

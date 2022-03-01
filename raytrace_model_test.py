@@ -12,6 +12,7 @@ for device in physical_devices:
 
 from tensorflow import keras
 from radiotools import plthelpers as php
+from sklearn.externals import joblib
 
 df = pd.read_csv('/mnt/md0/aholmberg/data/raytrace_samples_random.csv')
 
@@ -36,50 +37,43 @@ unique, index, count = np.unique(x_new, return_counts=True, return_index=True, a
 print(unique, index, count)
 print(np.unique(count, return_counts=True))
 
-x  = x_new[0::2,:]
-#x_train = x[:int(x.shape[0]*0.8)]
-#x_test = x[int(x.shape[0]*0.8):]
-x_train = x
+model_path = '/mnt/md0/aholmberg/models/raytrace_6x1024-4-out'
+path_of_plot = '/mnt/md0/aholmberg/plots/raytrace/raytrace_6x1024-4-out-new-scaling/'
+
+
+scaler_x = joblib.load(model_path + '-x-scaler.save')
+scaler_y = joblib.load(model_path + '-y-scaler.save')
+
+x_test  = x_new[0::2,:]
+
 
 y_temp1  = y_new[0::2,:]
 y_temp2  = y_new[1::2,:]
-y = np.zeros((y_temp1.shape[0], 8))
+y_test = np.zeros((y_temp1.shape[0], 8))
 
 for i in range(4):
-    y[:,2*i] = y_temp1[:,i]
-    y[:,2*i+1] = y_temp2[:,i]
-
-#y_train = y[:int(y.shape[0]*0.8)]
-#y_test = y[int(y.shape[0]*0.8):]
-y_train = y
-
-scaler_x = MinMaxScaler(feature_range=(0,1))
-scaler_x.fit(x_train)
-norm_x_train = scaler_x.transform(x_train)
-#norm_x_test = scaler_x.transform(x_test)
-
-scaler_y = MinMaxScaler(feature_range=(0,1))
-scaler_y.fit(y_train)
-norm_y_train = scaler_y.transform(y_train)
-#norm_y_test = scaler_y.transform(y_test)
+    y_test[:,2*i] = y_temp1[:,i]
+    y_test[:,2*i+1] = y_temp2[:,i]
 
 
-model = keras.models.load_model('/mnt/md0/aholmberg/models/best_raytrace_model_hyper_21')
+norm_x_test = scaler_x.transform(x_test)
+norm_y_test = scaler_y.transform(y_test)
+
+
+model = keras.models.load_model(model_path)
 print(model.summary())
 
-for i, layer in enumerate (model.layers):
-    print (i, layer)
-    try:
-        print ("    ",layer.activation)
-    except AttributeError:
-        print('   no activation attribute')
+
+#y_test_pred = model(norm_x_train).numpy()
+temp1 = model(norm_x_test)
+y_test_pred = np.concatenate((temp1[0], temp1[1], temp1[2], temp1[3]), axis=1)
 
 
-y_test_pred = model(norm_x_train).numpy()
 y_test_inv = scaler_y.inverse_transform(y_test_pred)
 
 
-diff_deg = y_train - y_test_inv
+#diff_deg = y_train - y_test_inv
+diff_deg = y_test - y_test_inv
 #diff = y_train - y_test_inv
 #diff_deg = np.copy(diff)
 #diff_deg[:,4:] = np.degrees(diff_deg[:, 4:])
@@ -94,7 +88,7 @@ sol = ['time_sol_1:',
        'recieve_sol_1:',
        'recieve_sol_2:']
 
-path_of_plot = '/mnt/md0/aholmberg/plots/raytrace/kt-hyper-21/'
+
 
 if not os.path.isdir(path_of_plot):
     os.mkdir(path_of_plot)
