@@ -12,9 +12,10 @@ for device in physical_devices:
 
 from tensorflow import keras
 from radiotools import plthelpers as php
-from sklearn.externals import joblib
+from pickle import load
 
 df = pd.read_csv('/mnt/md0/aholmberg/data/raytrace_samples_random.csv')
+
 
 sc_pos_r = df['source_pos_r'].to_numpy().astype(np.float32)
 sc_pos_z = df['source_pos_z'].to_numpy().astype(np.float32)
@@ -37,12 +38,13 @@ unique, index, count = np.unique(x_new, return_counts=True, return_index=True, a
 print(unique, index, count)
 print(np.unique(count, return_counts=True))
 
-model_path = '/mnt/md0/aholmberg/models/raytrace_6x1024-4-out'
-path_of_plot = '/mnt/md0/aholmberg/plots/raytrace/raytrace_6x1024-4-out-new-scaling/'
+model_path = '/mnt/md0/aholmberg/models/multi-out-big'
+path_of_plot = '/mnt/md0/aholmberg/plots/raytrace/multi-out-big/'
+scaler_path_x = model_path + "-x-scaler.pkl"
+scaler_path_y = model_path + "-y-scaler.pkl"
 
-
-scaler_x = joblib.load(model_path + '-x-scaler.save')
-scaler_y = joblib.load(model_path + '-y-scaler.save')
+scaler_x = load(open(scaler_path_x, 'rb'))
+scaler_y = load(open(scaler_path_y, 'rb'))
 
 x_test  = x_new[0::2,:]
 
@@ -63,8 +65,8 @@ norm_y_test = scaler_y.transform(y_test)
 model = keras.models.load_model(model_path)
 print(model.summary())
 
-
-#y_test_pred = model(norm_x_train).numpy()
+#y_test_pred = np.zeros((norm_x_test.shape[0], 8))
+#y_test_pred[:,:2] = model(norm_x_test).numpy()
 temp1 = model(norm_x_test)
 y_test_pred = np.concatenate((temp1[0], temp1[1], temp1[2], temp1[3]), axis=1)
 
@@ -99,5 +101,14 @@ for i in range(8):
     mean = np.mean(diff_deg[:,i])
     std = np.std(diff_deg[:,i])
     print(sol[i] + f' mean: {mean:.4f}  std: {std:.4f}')
-    fix, ax = php.get_histogram(diff_deg[:,i], bins=50)
+    fix, ax = php.get_histogram(diff_deg[:,i], bins=100)
     plt.savefig(path_of_plot + sol[i][:-1] + '.png')
+
+'''
+l_bounds = [-2000, -2700, -200]
+u_bounds = [-1, -1, -1]
+
+for i in range(1999):
+    for j in range(2699):
+        index = x
+'''

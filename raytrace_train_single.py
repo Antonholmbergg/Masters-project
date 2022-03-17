@@ -13,7 +13,7 @@ from tensorflow.keras import layers
 import numpy as np
 np.set_printoptions(precision=3, suppress=True)
 from sklearn.preprocessing import MinMaxScaler
-from raytrace_model_def import get_simple_model, get_multiple_output_model, get_multiple_output_model_2
+import raytrace_model_def
 from pickle import dump
 
 tf.random.set_seed(
@@ -69,7 +69,7 @@ scaler_y = MinMaxScaler(feature_range=(0,1))
 scaler_y.fit(y_train)
 norm_y_train = scaler_y.transform(y_train)
 
-path = '/mnt/md0/aholmberg/models/raytrace_6x3072-more-data'
+path = '/mnt/md0/aholmberg/models/multi-out-bigger-skip-weight-v2-2'
 
 scaler_path_x = path + "-x-scaler.pkl"
 scaler_path_y = path + "-y-scaler.pkl"
@@ -78,37 +78,38 @@ dump(scaler_x, open(scaler_path_x, 'wb'))
 dump(scaler_y, open(scaler_path_y, 'wb'))
 
 #single output model
-#"""
-activation = 'relu'
-depth = 6
-width = 3072
-opt = keras.optimizers.Adam()
-model = get_simple_model(width, depth, activation, optimizer=opt)
-print(model.summary())
-#"""
-
-
 """
-#multi output model
 activation = 'relu'
 depth = 6
 width = 1024
-opt = keras.optimizers.Adam(learning_rate=1e-3)
-#model = get_multiple_output_model(width, depth, activation=activation)
-model = get_multiple_output_model_2(width, depth, activation=activation)
+opt = keras.optimizers.Adam()
+model = raytrace_model_def.get_simple_model(width, depth, activation, output_shape=2)
+#model = raytrace_model_def.get_simple_model_dropout(width, depth, activation, optimizer=opt, batch_norm=True)
+#model = raytrace_model_def.get_skip_model_2(width, activation)
+print(model.summary())
 """
 
+
+#"""
+#multi output model
+activation = 'relu'
+depth = 1
+width = 1024
+opt = keras.optimizers.Adam(learning_rate=1e-3)
+model = raytrace_model_def.get_multiple_output_model_skip_v2_2(width, depth, activation=activation)
+#"""
+
 def scheduler(epoch, lr):
-    if epoch <= 5:
+    if epoch <= 1:
         return 1e-2
-    #elif epoch > 37:
-        #return 1e-5
+    elif epoch == 3:
+        return 2e-3
     else:
-       return lr * tf.math.exp(-0.05)
+       return lr * tf.math.exp(-0.035)
 
 lr_scheduler = keras.callbacks.LearningRateScheduler(scheduler)
 
-checkpoint_filepath = '/mnt/md0/aholmberg/models/ckpt-21-6x3072-more-data'
+checkpoint_filepath = '/mnt/md0/aholmberg/models/multi-out-bigger-skip-weight-v2-2'
 
 if not os.path.isdir(checkpoint_filepath):
     os.mkdir(checkpoint_filepath)
@@ -121,16 +122,16 @@ model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
 )
 
 #single output model
-#"""
+"""
 model.fit(
     norm_x_train,
-    norm_y_train,
-    epochs=125,
+    norm_y_train[:,:2],
+    epochs=100,
     batch_size=512,
     validation_split=0.1,
     callbacks=[lr_scheduler, model_checkpoint_callback]
     )
-#"""
+"""
 
 # multi output model
 """
@@ -143,18 +144,18 @@ model.fit(
     callbacks=[lr_scheduler, model_checkpoint_callback]
     )
 """
-"""
+#"""
 model.fit(
     norm_x_train,
     [norm_y_train[:,:2], norm_y_train[:,2:4], norm_y_train[:,4:6], norm_y_train[:,6:]],
-    epochs=100,
-    batch_size=128,
+    epochs=200,
+    batch_size=512,
     validation_split=0.1,
     callbacks=[lr_scheduler, model_checkpoint_callback]
     )
 
 model.load_weights(checkpoint_filepath)
-"""
+#"""
 
 
 if not os.path.isdir(path):
