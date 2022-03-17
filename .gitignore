@@ -1,0 +1,5 @@
+plots/launch_sol_1_joint_grid.png
+*.png
+.vscode
+*.pyc
+GAN_signal_gen.ipynb
