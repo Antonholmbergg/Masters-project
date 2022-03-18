@@ -4,37 +4,50 @@ from tensorflow.keras import layers
 import matplotlib.pyplot as plt
 
 
-def get_discriminator_model(discriminator_in_channels):
-    input = layers.Input(shape=discriminator_in_channels)
-    x = layers.Dense(512, activation='relu')(input)
-    x = layers.Dense(256, activation='relu')(x)
-    x = layers.Dense(128, activation='relu')(x)
-    x = layers.Dense(64, activation='relu')(x)
-    x = layers.Dense(1)(x)
-
-    d_model = keras.models.Model(input, x, name="discriminator")
-    return d_model
-
-
-def get_discriminator_model_bigger(discriminator_in_channels):
-    input = layers.Input(shape=discriminator_in_channels)
-    x = layers.Dense(1024, activation='relu')(input)
-    x = layers.Dense(1024, activation='relu')(x)
+def get_discriminator_model(discriminator_in_channels=896, condition_shape=2):
+    signal_input = layers.Input(shape=discriminator_in_channels)
+    condition_input = layers.Input(shape=condition_shape)
+    x2 = layers.Dense(64, activation='relu')(condition_input)
+    x2 = layers.Dense(1024, activation='relu')(x2)
+    x = layers.Dense(1024, activation='relu')(signal_input)
+    x = layers.Dense(1024, activation='relu')(x + x2)
     x = layers.Dense(512, activation='relu')(x)
     x = layers.Dense(128, activation='relu')(x)
     x = layers.Dense(64, activation='relu')(x)
     x = layers.Dense(1)(x)
 
-    d_model = keras.models.Model(input, x, name="discriminator")
+    d_model = keras.models.Model([signal_input, condition_input], x, name="discriminator")
     return d_model
 
 
-def get_generator_model(generator_in_channels):
-    noise = layers.Input(shape=(generator_in_channels,))
+def get_discriminator_model_lstm(discriminator_in_channels=896, condition_shape=2):
+    signal_input = layers.Input(shape=(discriminator_in_channels, 1))
+    condition_input = layers.Input(shape=condition_shape)
+    x2 = layers.Dense(64, activation='relu')(condition_input)
+    x2 = layers.Dense(128, activation='relu')(x2)
+    #x = layers.Dense(1024, activation='relu')(signal_input)
+    x = layers.LSTM(128, return_sequences=False)(signal_input)
+    x = layers.Dense(512, activation='relu')(x + x2)
+    x = layers.Dense(512, activation='relu')(x)
+    x = layers.Dense(128, activation='relu')(x)
+    x = layers.Dense(64, activation='relu')(x)
+    x = layers.Dense(1)(x)
+
+    d_model = keras.models.Model([signal_input, condition_input], x, name="discriminator")
+    return d_model
+
+
+def get_generator_model(generator_in_channels=896, condition_shape=2):
+    noise = layers.Input(shape=generator_in_channels)
+    condition_input = layers.Input(shape=condition_shape)
+    x2 = layers.Dense(64, activation='relu')(condition_input)
+    x2 = layers.Dense(1024, activation='relu')(condition_input)
     x = layers.Dense(1024, activation='relu')(noise)
+    x = layers.Dense(1024, activation='relu')(x + x2)
+    x = layers.Dense(896, activation='relu')(x)
     x = layers.Dense(896, activation='relu')(x)
     x = layers.Dense(896)(x)
-    g_model = keras.models.Model(noise, x, name="generator")
+    g_model = keras.models.Model([noise, condition_input], x, name="generator")
     return g_model
 
 
@@ -71,14 +84,14 @@ class WGAN(keras.Model):
         alpha = tf.random.normal([batch_size, 1], 0.0, 1.0) #same dimension as batches
         diff = fake_signals - real_signals
         interpolated = real_signals + alpha * diff
-        interpolated_with_condition = tf.concat((condition, interpolated), 1)
+        #interpolated_with_condition = tf.concat((condition, interpolated), 1)
         with tf.GradientTape() as gp_tape:
-            gp_tape.watch(interpolated_with_condition)
+            gp_tape.watch(interpolated)
             # 1. Get the discriminator output for this interpolated signal
-            pred = self.discriminator(interpolated_with_condition, training=True)
+            pred = self.discriminator([interpolated, condition], training=True)
 
         # 2. Calculate the gradients w.r.t to this interpolated signal.
-        grads = gp_tape.gradient(pred, [interpolated_with_condition])[0]
+        grads = gp_tape.gradient(pred, [interpolated, condition])[0]
         # 3. Calculate the norm of the gradients.
         norm = tf.sqrt(tf.reduce_sum(tf.square(grads), axis=[1]))# , 2, 3])) again need same nr of dims as the batches
         gp = tf.reduce_mean((norm - 1.0) ** 2)
@@ -111,16 +124,13 @@ class WGAN(keras.Model):
             random_latent_vectors = tf.random.normal(
                 shape=(batch_size, self.latent_dim)
             )
-            generator_input = tf.concat((condition, random_latent_vectors), axis=1)
-            discriminator_input_real = tf.concat((condition, real_signals), axis=1)
             with tf.GradientTape() as tape:
                 # Generate fake images from the latent vector
-                fake_signals = self.generator(generator_input, training=True)
+                fake_signals = self.generator([random_latent_vectors, condition], training=True)
                 # Get the logits for the fake images
-                discriminator_input_fake = tf.concat((condition, fake_signals), 1)
-                fake_logits = self.discriminator(discriminator_input_fake, training=True)
+                fake_logits = self.discriminator([fake_signals, condition], training=True)
                 # Get the logits for the real images
-                real_logits = self.discriminator(discriminator_input_real, training=True)
+                real_logits = self.discriminator([real_signals, condition], training=True)
 
                 # Calculate the discriminator loss using the fake and real image logits
                 d_cost = self.d_loss_fn(real_sig=real_logits, fake_sig=fake_logits)
@@ -139,13 +149,11 @@ class WGAN(keras.Model):
         # Train the generator
         # Get the latent vector
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim))
-        latent_vec_condition = tf.concat((condition, random_latent_vectors), 1)
         with tf.GradientTape() as tape:
             # Generate fake signals using the generator
-            generated_signals = self.generator(latent_vec_condition, training=True)
+            generated_signals = self.generator([random_latent_vectors, condition], training=True)
             # Get the discriminator logits for fake signals
-            gen_sig_cond = tf.concat((condition, generated_signals), 1)
-            gen_signal_logits = self.discriminator(gen_sig_cond, training=True)
+            gen_signal_logits = self.discriminator([generated_signals, condition], training=True)
             # Calculate the generator loss
             g_loss = self.g_loss_fn(gen_signal_logits)
 
@@ -168,8 +176,7 @@ class GANMonitor(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         if epoch%20 == 0:
             random_latent_vectors = tf.random.normal(shape=(self.num_sig, self.latent_dim))
-            generator_input = tf.concat((self.condition, random_latent_vectors), 1)
-            generated_signals = self.model.generator(generator_input)
+            generated_signals = self.model.generator([random_latent_vectors, self.condition])
 
         
             for i in range(self.num_sig):

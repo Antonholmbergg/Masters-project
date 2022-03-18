@@ -1,7 +1,8 @@
 import os
 from gpuutils import GpuUtils
 GpuUtils.allocate(gpu_count=1, framework='keras')
-import def_signal_GAN
+#import def_signal_GAN
+import cWGANGP_model_def
 
 import tensorflow as tf
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -31,9 +32,9 @@ N_SHOWERS = 10
 BATCH_SIZE = 128
 
 latent_dim = 1024
-cond_dim = condition.shape[1]
-generator_in_channels = latent_dim + cond_dim
-discriminator_in_channels = N + cond_dim
+#cond_dim = condition.shape[1]
+generator_in_channels = latent_dim# + cond_dim
+discriminator_in_channels = N# + cond_dim
 
 # Instantiate the optimizer for both networks
 # (learning_rate=0.0002, beta_1=0.5 are recommended)
@@ -44,15 +45,23 @@ discriminator_optimizer = keras.optimizers.Adam(
     learning_rate=0.0002, beta_1=0.5, beta_2=0.9
 )
 
-epochs = 100
+
+epochs = 1000
 monitor_cond = condition_norm[-40::10,:]
-cbk = def_signal_GAN.GANMonitor(monitor_cond, num_signal=4, latent_dim=latent_dim)
+
+plot_path = 'GAN_plots/normalized_discriminator_lstm/'
+if not os.path.isdir(plot_path):
+    os.mkdir(plot_path)
+
+cbk = cWGANGP_model_def.GANMonitor(monitor_cond, plot_path, num_signal=4, latent_dim=latent_dim)
 monitor_cond
 
-g_model = def_signal_GAN.get_generator_model(generator_in_channels)
-d_model = def_signal_GAN.get_discriminator_model(discriminator_in_channels)
+g_model = cWGANGP_model_def.get_generator_model(generator_in_channels)
+print(g_model.summary())
+d_model = cWGANGP_model_def.get_discriminator_model_lstm(discriminator_in_channels)
+print(d_model.summary())
 
-wgan = def_signal_GAN.WGAN(
+wgan = cWGANGP_model_def.WGAN(
     discriminator=d_model,
     generator=g_model,
     latent_dim=latent_dim,
@@ -63,14 +72,19 @@ wgan = def_signal_GAN.WGAN(
 wgan.compile(
     d_optimizer=discriminator_optimizer,
     g_optimizer=generator_optimizer,
-    g_loss_fn=def_signal_GAN.generator_loss,
-    d_loss_fn=def_signal_GAN.discriminator_loss,
+    g_loss_fn=cWGANGP_model_def.generator_loss,
+    d_loss_fn=cWGANGP_model_def.discriminator_loss,
 )
 
-train_signal = signals_filtered[0:-40,:]
+train_signals = signals_filtered[0:-40,:]
 train_condition = condition_norm[0:-40,:]
-train_data = np.concatenate((train_condition, train_signal), axis=1)
+
+normalized_signals = np.zeros_like(train_signals)
+for i in range(train_signals.shape[0]):
+    normalized_signals[i,:] = train_signals[i,:]*(1e19/condition[i,0])
+
+train_data = np.concatenate((train_condition, normalized_signals), axis=1)
 
 wgan.fit(train_data, batch_size=BATCH_SIZE, epochs=epochs, callbacks=[cbk])
-wgan.generator.save('/mnt/md0/aholmberg/GAN_models/GAN_generator_first_try')
-wgan.discriminator.save('/mnt/md0/aholmberg/GAN_models/GAN_discriminator_first_try')
+wgan.generator.save('/mnt/md0/aholmberg/GAN_models/GAN_generator_normalized_lstm')
+wgan.discriminator.save('/mnt/md0/aholmberg/GAN_models/GAN_discriminator_normalized_lstm')
