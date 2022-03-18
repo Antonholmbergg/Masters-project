@@ -44,7 +44,7 @@ discriminator_optimizer = keras.optimizers.Adam(
     learning_rate=0.0002, beta_1=0.5, beta_2=0.9
 )
 
-epochs = 11
+epochs = 100
 monitor_cond = condition_norm[-40::10,:]
 cbk = def_signal_GAN.GANMonitor(monitor_cond, num_signal=4, latent_dim=latent_dim)
 monitor_cond
@@ -67,7 +67,7 @@ wgan.compile(
     d_loss_fn=def_signal_GAN.discriminator_loss,
 )
 
-train_signal = signals[0:-40,:]
+train_signal = signals_filtered[0:-40,:]
 train_condition = condition_norm[0:-40,:]
 train_data = np.concatenate((train_condition, train_signal), axis=1)
 
