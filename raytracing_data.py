@@ -5,15 +5,15 @@ from NuRadioMC.SignalProp import analyticraytracing as ray
 from NuRadioMC.utilities.medium import southpole_2015
 
 
-#sampler = qmc.Sobol(d=3, seed=42)
-#samples = sampler.random_base2(m=24)
+# sampler = qmc.Sobol(d=3, seed=42)
+# samples = sampler.random_base2(m=24)
 
 
-l_bounds = [-2000, -2700]#, -200]
-u_bounds = [-1, -1]#, -1]
-#samples_scaled = qmc.scale(samples, l_bounds, u_bounds)
+l_bounds = [-2000, -2700, -200]
+u_bounds = [-1, -1, -1]
+# samples_scaled = qmc.scale(samples, l_bounds, u_bounds)
 
-samples = np.random.random_sample((2**17, 2))
+samples = np.random.random_sample((2**25, 3))
 samples_scaled = np.zeros((samples.shape))
 for i in range(samples.shape[1]):
     samples_scaled[:, i] = (l_bounds[i] - u_bounds[i]) * samples[:, i] + u_bounds[i]
@@ -23,7 +23,7 @@ antenna_pos = []
 
 for i in range(samples.shape[0]):
     source_pos.append([samples_scaled[i, 0], 0, samples_scaled[i, 1]])
-    antenna_pos.append([0, 0, -200])#samples_scaled[i, 2]])
+    antenna_pos.append([0, 0, samples_scaled[i, 2]])
 
 
 ice = southpole_2015()
@@ -60,11 +60,11 @@ df = pd.DataFrame(raytrace_data)
 
 df['launch_angle'] = np.degrees(np.arctan2(df['launch_vec_r'].to_numpy(), df['launch_vec_z'].to_numpy()))
 df['recieve_angle'] = np.degrees(np.arctan2(df['recieve_vec_r'].to_numpy(), df['recieve_vec_z'].to_numpy()))
-#df.to_csv('/mnt/md0/aholmberg/data/raytrace_samples_angle.csv', index=False)
+# df.to_csv('/mnt/md0/aholmberg/data/raytrace_samples_angle.csv', index=False)
 
-df.to_csv('/mnt/md0/aholmberg/data/raytrace_random_17_antenna_200.csv', index=False)
+df.to_csv('/mnt/md0/aholmberg/data/raytrace_random_25.csv', index=False)
 df2 = pd.DataFrame(classification_data)
-df2.to_csv('/mnt/md0/aholmberg/data/ana_ray_class_random_17_antenna_200.csv', index=False)
+df2.to_csv('/mnt/md0/aholmberg/data/ana_ray_class_random_25.csv', index=False)
 """
 type: int
     * 1: 'direct'

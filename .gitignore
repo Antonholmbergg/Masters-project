@@ -3,3 +3,11 @@ plots/launch_sol_1_joint_grid.png
 .vscode
 *.pyc
 GAN_signal_gen.ipynb
+*.pkl
+*.csv
+Gan_losses
+GAN_plots
+logs
+losses
+plots
+unused_scripts

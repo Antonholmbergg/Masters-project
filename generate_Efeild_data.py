@@ -3,13 +3,15 @@ from NuRadioReco.utilities import units, fft
 from scipy.stats import qmc
 import numpy as np
 
-m = 18
+m = 12
 sampler = qmc.Sobol(d=2, seed=42)
 samples = sampler.random_base2(m=m)
 
 
-l_bounds = [np.log(1e15), 55.82 - 19.99]
-u_bounds = [np.log(1e19), 55.82 + 19.99]
+# l_bounds = [np.log(1e15), 55.82 - 19.99]
+# u_bounds = [np.log(1e19), 55.82 + 19.99]
+l_bounds = [np.log(1e15), 55.82 - 2.5]
+u_bounds = [np.log(1e19), 55.82 + 2.5]
 samples_scaled = qmc.scale(samples, l_bounds, u_bounds)
 samples_scaled[:,0] = np.exp(samples_scaled[:,0])
 
@@ -37,8 +39,8 @@ for i in range(2**m):
             model="ARZ2020",
             iN=iN
         )
-        traces[i*10 + iN,0] = energy
-        traces[i*10 + iN,1] = theta
+        traces[i*10 + iN, 0] = energy
+        traces[i*10 + iN, 1] = theta
         traces[i*10 + iN, 2] = iN
         traces[i*10 + iN, 3:] = trace
 
@@ -46,7 +48,7 @@ print(np.sum(traces == 0))
 print(traces.shape[0]*traces.shape[1])
 
 #np.savetxt('/mnt/md0/aholmberg/data/efield_14.csv', traces, delimiter=',', header='first two columns are energy(0) and angle(1)')
-np.save('/mnt/md0/aholmberg/data/signal_had_18.npy', traces)
+np.save('/mnt/md0/aholmberg/data/signal_had_12_5deg.npy', traces)
 
 signals_filtered = np.zeros_like(traces[:,3:])
 for ind in range(traces.shape[0]):
@@ -64,4 +66,4 @@ for ind in range(traces.shape[0]):
     signal_filtered = fft.freq2time(signal_spectrum_filtered, sampling_rate=sr)
     signals_filtered[ind,:] = signal_filtered
 
-np.save('/mnt/md0/aholmberg/data/signal_had_18_filtered.npy', signals_filtered)
+np.save('/mnt/md0/aholmberg/data/signal_had_12_filtered_5deg.npy', signals_filtered)
