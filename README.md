@@ -7,12 +7,15 @@ Deep learning surrogate models for Askaryan signal generation and subsequent in-
 - To run a random grid search for hyperparameters of the classifier run classifier_train.py
 - To train the best model found in the search further, test it and plot the results use classifier_retrain.ipynb
 ### Performance of the classifier
-[confusion-matrix_2.pdf](https://github.com/Antonholmbergg/Masters-project/files/8854814/confusion-matrix_2.pdf)
+![image](https://user-images.githubusercontent.com/61893305/172429414-788e85a3-5160-486e-9a9c-168c70c80925.png)
+
 
 ## Ray tracing, Regression
 - Data for the regression is generated together with the classification data
 - To train the regression model use raytrace_train_single.py with a model defined in raytrace_model_def.py
 - To test the trained model and plot results use raytrace_test.ipynb
+### Performance of the regression in the case of the first solution for travel time
+![sol_0_simpler](https://user-images.githubusercontent.com/61893305/172429690-5fff1f19-f38e-4a00-ae15-e5d52cfacc38.png)
 
 ## Signal generation
 - To generate the training data run generate_signal_data.py
