@@ -5,7 +5,7 @@ all of the configurations and their best validation accuracy.
 This code should probably be changed so that multiple models
 can be trained in parallel. If running on multiple GPUs then 
 set CUDA_VISIBLE_DEVICES='number' when running the code since
-it does not pick GPU inteligently.
+it does not pick GPU inteligently. Tested with tensorflow version 2.4
 """
 import os
 import pandas as pd
