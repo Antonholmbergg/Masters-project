@@ -2,10 +2,16 @@
 Deep learning surrogate models for Askaryan signal generation and subsequent in-ice ray tracing.
 The thesis that this code was created for is available at:  And is recomended to read to understand the problem.
 
+For someone running on a multi GPU system it can be necessary to specify which GPU to use since the code is not designed
+in such a way that memory usage is considered when picking GPU. This can lead to the code crashing due to insufficient memory.
+So if this is a problem specify which GPU to use by running for exampe: "CUDA_VISIBLE_DEVICES=0 python classifier_train.py" to 
+train a set of classifiers.
+
 ## Ray tracing, Classification
 - If you have access to the dl1 deep learing server at Uppsala University run the code in the conda environment tf2.4
 - To generate the training data run raytracing_data.py specifying the locations for the saved data files
 - To convert the generated data from cartesian coordinates to spherical coordinates use raytracing_sphere_data.ipynb
+- The two previous steps should be combined in the future (at first cartesian coordinates were used and it was faster to change the data files than to generate new ones).
 - To run a random grid search for hyperparameters of the classifier run classifier_train.py
 - To train the best model found in the search further, test it and plot the results use classifier_retrain.ipynb
 ### Performance of the classifier
