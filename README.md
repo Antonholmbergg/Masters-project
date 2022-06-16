@@ -9,6 +9,15 @@ train a set of classifiers.
 
 The training was done on GPUs with 24GB VRAM so to run the code on GPUs with less memory one might have to change how the training data is loded.
 
+For anyone using the dl1 server at UU the best models are saved in /mnt/md0/aholmberg/best_models/. They are all saved in normal model format except
+for the classifier which has a saved model, which as the structure of the best model but separately the best model weights. So for the classifier first
+load the the model, then, load the weights onto that model.
+
+Under /mnt/md0/aholmberg/ there is also a data directory with all of the necessary training data and saved models from the different hyperparameter
+searches. All paths in the code point to these locations with an absolute path so if running the code on dl1, the code should work straight away.
+Otherwise these paths will need to be changed and the data will have to be generated.
+
+
 ## Ray tracing, Classification
 - If you have access to the dl1 deep learing server at Uppsala University run the code in the conda environment tf2.4
 - To generate the training data run raytracing_data.py specifying the locations for the saved data files
