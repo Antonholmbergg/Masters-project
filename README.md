@@ -7,6 +7,8 @@ in such a way that memory usage is considered when picking GPU. This can lead to
 So if this is a problem specify which GPU to use by running for exampe: "CUDA_VISIBLE_DEVICES=0 python classifier_train.py" to 
 train a set of classifiers.
 
+The training was done on GPUs with 24GB VRAM so to run the code on GPUs with less memory one might have to change how the training data is loded.
+
 ## Ray tracing, Classification
 - If you have access to the dl1 deep learing server at Uppsala University run the code in the conda environment tf2.4
 - To generate the training data run raytracing_data.py specifying the locations for the saved data files
