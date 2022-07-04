@@ -1,6 +1,7 @@
 # Masters-project
 Deep learning surrogate models for Askaryan signal generation and subsequent in-ice ray tracing.
-The thesis that this code was created for is available at:  And is recomended to read to understand the problem.
+The thesis that this code was created for is available at: http://uu.diva-portal.org/smash/record.jsf?dswid=4082&pid=diva2%3A1669476&c=2&searchType=SIMPLE&language=sv&query=anton+holmberg&af=%5B%5D&aq=%5B%5B%5D%5D&aq2=%5B%5B%5D%5D&aqe=%5B%5D&noOfRows=50&sortOrder=author_sort_asc&sortOrder2=title_sort_asc&onlyFullText=false&sf=undergraduate
+And it is recomended to read it to understand the problem.
 
 For someone running on a multi GPU system it can be necessary to specify which GPU to use since the code is not designed
 in such a way that memory usage is considered when picking GPU. This can lead to the code crashing due to insufficient memory.
