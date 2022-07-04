@@ -11,3 +11,4 @@ logs
 losses
 plots
 unused_scripts
+*.eps
